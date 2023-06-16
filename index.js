@@ -59,11 +59,7 @@ export function findNearestLocations(userLatLng, count, locationsArray) {
     throw new Error('Invalid locations array. It should be an array of LatLng objects.');
   }
 
-  const sortedLocations = sortLocationsByDistance(userLatLng, locationsArray);
-
-  const nearestLocations = sortedLocations.slice(0, count);
-
-  return nearestLocations;
+  return sortLocationsByDistance(userLatLng, locationsArray).slice(0, count);
 }
 
 function sortLocationsByDistance(userLatLng, locationsArray) {
