@@ -1,8 +1,10 @@
-export function LatLng(lat, lng) {
-  validateLatLng(lat, lng);
+export class LatLng {
+  constructor(lat, lng) {
+    this.lat = parseFloat(lat);
+    this.lng = parseFloat(lng);
 
-  this.lat = lat;
-  this.lng = lng;
+    validateLatLng(this.lat, this.lng);
+  }
 }
 
 export function getUserPosition() {
@@ -31,15 +33,16 @@ export function calculateDistance(latLng1, latLng2) {
 
   const earthRadius = 6371; // Radius of the earth in kilometers
 
-  const dLat = ((latLng2.lat - latLng1.lat) * Math.PI) / 180;
-  const dLon = ((latLng2.lng - latLng1.lng) * Math.PI) / 180;
+  const { lat: lat1, lng: lng1 } = latLng1;
+  const { lat: lat2, lng: lng2 } = latLng2;
+
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lng2 - lng1);
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((latLng1.lat * Math.PI) / 180) *
-    Math.cos((latLng2.lat * Math.PI) / 180) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = earthRadius * c;
@@ -47,30 +50,30 @@ export function calculateDistance(latLng1, latLng2) {
   return distance;
 }
 
-export function findNearestLocations(userLatLng, locationsArray, count = 3) {
-  if (!userLatLng instanceof LatLng) {
+export function findNearestLocations(userLatLng, count, locationsArray) {
+  if (!(userLatLng instanceof LatLng)) {
     throw new Error('Invalid LatLng object');
   }
 
-  const sortedLocations = locationsArray.sort((a, b) => {
-    const latLngA = new LatLng(parseFloat(a.lat), parseFloat(a.lng));
-    const latLngB = new LatLng(parseFloat(b.lat), parseFloat(b.lng));
+  if (!Array.isArray(locationsArray) || !locationsArray.every(loc => loc instanceof LatLng)) {
+    throw new Error('Invalid locations array. It should be an array of LatLng objects.');
+  }
 
-    return compareDistances(userLatLng, latLngA, latLngB);
-  });
+  const sortedLocations = sortLocationsByDistance(userLatLng, locationsArray);
 
   const nearestLocations = sortedLocations.slice(0, count);
 
   return nearestLocations;
 }
 
-function compareDistances(userLatLng, a, b) {
-  const distanceA = calculateDistance(userLatLng, a);
-  const distanceB = calculateDistance(userLatLng, b);
+function sortLocationsByDistance(userLatLng, locationsArray) {
+  return locationsArray.sort((a, b) => {
+    const distanceA = calculateDistance(userLatLng, a);
+    const distanceB = calculateDistance(userLatLng, b);
 
-  return distanceA - distanceB;
+    return distanceA - distanceB;
+  });
 }
-
 
 function validateLatLng(lat, lng) {
   if (typeof lat !== 'number' || typeof lng !== 'number') {
@@ -84,4 +87,8 @@ function validateLatLng(lat, lng) {
   if (lng < -180 || lng > 180) {
     throw new Error('Invalid longitude');
   }
+}
+
+function toRadians(degrees) {
+  return degrees * (Math.PI / 180);
 }
